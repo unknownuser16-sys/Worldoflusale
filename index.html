@@ -485,10 +485,13 @@
 <canvas id="heart-canvas"></canvas>
 <canvas id="particle-canvas"></canvas>
 <div id="cursor-glow"></div>
-<button id="music-btn" aria-label="Toggle music">🎵</button>
+<button id="music-btn" aria-label="Toggle music">
+  <svg id="music-icon-play" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+  <svg id="music-icon-pause" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+</button>
 
-<audio id="bg-music" loop>
-  <source src="https://upload.wikimedia.org/wikipedia/commons/3/37/Johann_Sebastian_Bach_-_Erbarme_dich%2C_mein_Gott_%28BWV_244%29.ogg" type="audio/ogg"/>
+<audio id="bg-music" loop preload="auto">
+  <source src="https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3" type="audio/mpeg">
 </audio>
 
 <!-- ════════════ LANDING ════════════ -->
@@ -772,6 +775,7 @@
 <script>
 /* STATE */
 let currentScreen = 'landing';
+let musicStarted = false;
 let musicPlaying  = false;
 const answers = JSON.parse(localStorage.getItem('anniversary-answers') || '{}');
 const music   = document.getElementById('bg-music');
@@ -875,6 +879,42 @@ function showLandingText() {
 }
 setTimeout(() => { if (!heartsCleared) { heartsCleared = true; showLandingText(); } }, 2800);
 
+/* MUSIC */
+function startMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+  music.volume = 0;
+  music.play().then(() => {
+    musicPlaying = true;
+    let vol = 0;
+    const fade = setInterval(() => {
+      vol = Math.min(0.38, vol + 0.015);
+      music.volume = vol;
+      if (vol >= 0.38) clearInterval(fade);
+    }, 80);
+    updateMusicBtn();
+  }).catch(() => {});
+}
+
+function toggleMusic() {
+  if (!musicStarted) return;
+  if (musicPlaying) {
+    music.pause();
+    musicPlaying = false;
+  } else {
+    music.play();
+    musicPlaying = true;
+  }
+  updateMusicBtn();
+}
+
+function updateMusicBtn() {
+  document.getElementById('music-icon-play').style.display = musicPlaying ? 'none' : 'block';
+  document.getElementById('music-icon-pause').style.display = musicPlaying ? 'block' : 'none';
+}
+
+document.getElementById('music-btn').addEventListener('click', toggleMusic);
+
 /* BEGIN */
 document.getElementById('begin-btn').addEventListener('click', () => {
   let fade = 1;
@@ -885,20 +925,9 @@ document.getElementById('begin-btn').addEventListener('click', () => {
   }, 30);
 
   document.body.classList.add('started');
-  music.volume = 0;
-  music.play().then(() => {
-    musicPlaying = true;
-    let v = 0;
-    const fi2 = setInterval(() => { v = Math.min(0.38, v + 0.018); music.volume = v; if (v >= 0.38) clearInterval(fi2); }, 90);
-  }).catch(() => {});
+  startMusic();
   goTo('ch1');
   startParticles();
-});
-
-/* MUSIC TOGGLE */
-document.getElementById('music-btn').addEventListener('click', () => {
-  if (musicPlaying) { music.pause(); musicPlaying = false; document.getElementById('music-btn').textContent = '🔇'; }
-  else              { music.play();  musicPlaying = true;  document.getElementById('music-btn').textContent = '🎵'; }
 });
 
 /* NAVIGATION */

@@ -490,9 +490,7 @@
   <svg id="music-icon-pause" viewBox="0 0 24 24" style="display:none"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
 </button>
 
-<audio id="bg-music" loop preload="auto">
-  <source src="https://cdn.pixabay.com/download/audio/2022/08/02/audio_884fe92c21.mp3" type="audio/mpeg">
-</audio>
+<!-- music handled by Web Audio API -->
 
 <!-- ════════════ LANDING ════════════ -->
 <section id="landing" class="screen active" aria-label="Welcome">
@@ -778,7 +776,105 @@ let currentScreen = 'landing';
 let musicStarted = false;
 let musicPlaying  = false;
 const answers = JSON.parse(localStorage.getItem('anniversary-answers') || '{}');
-const music   = document.getElementById('bg-music');
+
+/* ── WEB AUDIO ROMANTIC PIANO ENGINE ── */
+let audioCtx = null, masterGain = null, scheduleTimer = null, beatTime = 0;
+
+// Romantic waltz in A minor / C major ~58bpm
+const MELODY = [
+  [69,2,0],[72,1,2],[71,1,3],[69,2,4],[67,2,6],
+  [72,2,8],[74,1,10],[76,2,11],[74,3,13],
+  [72,2,16],[71,1,18],[69,2,19],[67,2,21],
+  [64,2,23],[65,1,25],[67,2,26],[69,4,28],
+];
+const BASS = [
+  [57,1,0],[60,0.5,1],[64,0.5,1.5],
+  [55,1,2],[59,0.5,3],[62,0.5,3.5],
+  [53,1,4],[57,0.5,5],[60,0.5,5.5],
+  [52,1,6],[55,0.5,7],[59,0.5,7.5],
+  [57,1,8],[60,0.5,9],[64,0.5,9.5],
+  [55,1,10],[59,0.5,11],[62,0.5,11.5],
+  [53,1,12],[57,0.5,13],[60,0.5,13.5],
+  [48,2,14],[52,0.5,16],[55,0.5,16.5],
+  [57,1,17],[60,0.5,18],[64,0.5,18.5],
+  [55,1,19],[59,0.5,20],[62,0.5,20.5],
+  [53,1,21],[57,0.5,22],[60,0.5,22.5],
+  [48,2,23],[52,0.5,25],[55,0.5,25.5],
+  [57,1,26],[60,0.5,27],[64,0.5,27.5],
+  [55,2,28],[59,0.5,30],[62,0.5,30.5],
+];
+const PHRASE_BEATS = 32, BPM = 58, SPB = 60 / BPM;
+
+function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+function playPianoNote(freq, startTime, dur, vol, isBass) {
+  const o1 = audioCtx.createOscillator(), o2 = audioCtx.createOscillator(), o3 = audioCtx.createOscillator();
+  const env = audioCtx.createGain(), filt = audioCtx.createBiquadFilter();
+  const g1 = audioCtx.createGain(), g2 = audioCtx.createGain(), g3 = audioCtx.createGain();
+  o1.type = 'triangle'; o1.frequency.value = freq;
+  o2.type = 'sine';     o2.frequency.value = freq * 2;
+  o3.type = 'sine';     o3.frequency.value = freq * 3;
+  filt.type = 'lowpass'; filt.frequency.value = isBass ? 800 : 3000; filt.Q.value = 0.5;
+  g1.gain.value = 1; g2.gain.value = isBass ? 0.22 : 0.16; g3.gain.value = 0.06;
+  o1.connect(g1); o2.connect(g2); o3.connect(g3);
+  [g1,g2,g3].forEach(g => g.connect(filt));
+  filt.connect(env); env.connect(masterGain);
+  const att = 0.012, dec = 0.2, sus = vol * 0.52, rel = dur * SPB * 0.5;
+  env.gain.setValueAtTime(0, startTime);
+  env.gain.linearRampToValueAtTime(vol, startTime + att);
+  env.gain.linearRampToValueAtTime(sus, startTime + att + dec);
+  env.gain.setValueAtTime(sus, startTime + dur * SPB - 0.05);
+  env.gain.linearRampToValueAtTime(0, startTime + dur * SPB + rel);
+  [o1,o2,o3].forEach(o => { o.start(startTime); o.stop(startTime + dur * SPB + rel + 0.15); });
+}
+
+function schedulePhraseAt(t0) {
+  MELODY.forEach(([m,d,del]) => playPianoNote(midiToFreq(m), t0 + del*SPB, d, 0.28, false));
+  BASS.forEach(  ([m,d,del]) => playPianoNote(midiToFreq(m), t0 + del*SPB, d, 0.13, true));
+}
+
+function loopScheduler() {
+  const phraseDur = PHRASE_BEATS * SPB, now = audioCtx.currentTime;
+  while (beatTime < now + phraseDur * 2) { schedulePhraseAt(beatTime); beatTime += phraseDur; }
+  scheduleTimer = setTimeout(loopScheduler, 4000);
+}
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.connect(audioCtx.destination);
+}
+
+function startMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+  initAudio();
+  beatTime = audioCtx.currentTime + 0.3;
+  loopScheduler();
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(0.75, audioCtx.currentTime + 3.5);
+  musicPlaying = true;
+  updateMusicBtn();
+}
+
+function toggleMusic() {
+  if (!musicStarted) return;
+  if (musicPlaying) {
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.8);
+    musicPlaying = false;
+  } else {
+    masterGain.gain.linearRampToValueAtTime(0.75, audioCtx.currentTime + 0.8);
+    musicPlaying = true;
+  }
+  updateMusicBtn();
+}
+
+function lowerMusicForEnding() {
+  if (!audioCtx || !musicPlaying) return;
+  masterGain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 5);
+}
 
 Object.keys(answers).forEach(k => { const el = document.getElementById(k); if (el) el.value = answers[k]; });
 
@@ -880,33 +976,7 @@ function showLandingText() {
 setTimeout(() => { if (!heartsCleared) { heartsCleared = true; showLandingText(); } }, 2800);
 
 /* MUSIC */
-function startMusic() {
-  if (musicStarted) return;
-  musicStarted = true;
-  music.volume = 0;
-  music.play().then(() => {
-    musicPlaying = true;
-    let vol = 0;
-    const fade = setInterval(() => {
-      vol = Math.min(0.38, vol + 0.015);
-      music.volume = vol;
-      if (vol >= 0.38) clearInterval(fade);
-    }, 80);
-    updateMusicBtn();
-  }).catch(() => {});
-}
-
-function toggleMusic() {
-  if (!musicStarted) return;
-  if (musicPlaying) {
-    music.pause();
-    musicPlaying = false;
-  } else {
-    music.play();
-    musicPlaying = true;
-  }
-  updateMusicBtn();
-}
+/* startMusic and toggleMusic defined above in Web Audio engine */
 
 function updateMusicBtn() {
   document.getElementById('music-icon-play').style.display = musicPlaying ? 'none' : 'block';
@@ -978,10 +1048,7 @@ function revealFinal() {
     document.getElementById('final-heart').classList.add('show');
     document.getElementById('final-p2').classList.add('show');
   }, 500);
-  if (musicPlaying) {
-    let v = music.volume;
-    const li = setInterval(() => { v = Math.max(0.12, v - 0.004); music.volume = v; if (v <= 0.12) clearInterval(li); }, 120);
-  }
+  lowerMusicForEnding();
 }
 
 /* THE END */

@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>For Mwamba 🌸</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=DM+Serif+Display:ital@0;1&family=Lato:wght@300;400&display=swap');
+
+  :root {
+    --blush:   #fce4ec;
+    --rose:    #f8bbd0;
+    --petal:   #ffd6e7;
+    --deep:    #c2185b;
+    --wine:    #880e4f;
+    --cream:   #fff8f5;
+    --text:    #4a2030;
+    --muted:   #9c6070;
+    --glass:   rgba(255,255,255,0.38);
+    --shadow:  rgba(194,24,91,0.13);
+    --gold:    #e8b4c8;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--blush);
+    color: var(--text);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* CANVASES */
+  #heart-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  #particle-canvas {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1;
+    opacity: 0; transition: opacity 2s;
+  }
+  body.started #particle-canvas { opacity: 1; }
+
+  /* CURSOR GLOW */
+  #cursor-glow {
+    position: fixed; width: 260px; height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(248,187,208,0.28) 0%, transparent 70%);
+    pointer-events: none; z-index: 2;
+    transform: translate(-50%,-50%);
+    transition: left 0.12s ease, top 0.12s ease;
+  }
+
+  /* MUSIC */
+  #music-btn {
+    position: fixed; top: 1.2rem; right: 1.2rem; z-index: 100;
+    background: var(--glass); backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.55);
+    border-radius: 50%; width: 46px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 1.1rem;
+    box-shadow: 0 4px 18px var(--shadow);
+    opacity: 0; transition: opacity 0.8s, transform 0.2s;
+  }
+  body.started #music-btn { opacity: 1; }
+  #music-btn:hover { transform: scale(1.08); }
+
+  /* PROGRESS */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--petal), var(--deep), var(--wine));
+    z-index: 100; width: 0%;
+    transition: width 0.7s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* SCREENS */
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 1s ease;
+  }
+  .screen.active  { opacity: 1; pointer-events: all; }
+
+  .chapter-screen {
+    background: linear-gradient(150deg, #fce4ec 0%, var(--cream) 55%, #ffd6e7 100%);
+    overflow-y: auto; justify-content: flex-start; padding-top: 3rem; padding-bottom: 3rem;
+  }
+
+  /* ════ LANDING ════ */
+  #landing {
+    background: linear-gradient(145deg, #ffe0ec 0%, #fff5f8 45%, #ffd1e8 100%);
+    overflow: hidden;
+  }
+
+  #landing-center {
+    position: relative; z-index: 5;
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+  }
+
+  /* Decorative petal ring */
+  .petal-ring {
+    position: absolute;
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    border: 1px solid rgba(194,24,91,0.12);
+    animation: ringPulse 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .petal-ring:nth-child(2) { width: 440px; height: 440px; animation-delay: 1s; opacity: 0.5; }
+  .petal-ring:nth-child(3) { width: 540px; height: 540px; animation-delay: 2s; opacity: 0.3; }
+  @keyframes ringPulse {
+    0%,100% { transform: scale(1); opacity: 0.4; }
+    50%      { transform: scale(1.04); opacity: 0.7; }
+  }
+
+  /* Eye-catching name badge */
+  #name-badge {
+    opacity: 0; transform: translateY(30px) scale(0.94);
+    transition: opacity 1.4s cubic-bezier(.2,.8,.2,1), transform 1.4s cubic-bezier(.2,.8,.2,1);
+  }
+  #name-badge.visible { opacity: 1; transform: translateY(0) scale(1); }
+
+  .welcome-line {
+    font-family: 'Lato', sans-serif;
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+    font-weight: 300;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .name-display {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(4rem, 14vw, 8.5rem);
+    font-style: italic;
+    color: var(--deep);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    text-shadow:
+      0 2px 0 rgba(194,24,91,0.15),
+      0 8px 40px rgba(194,24,91,0.25),
+      0 20px 80px rgba(194,24,91,0.1);
+    position: relative;
+    display: inline-block;
+  }
+
+  /* shimmer sweep on the name */
+  .name-display::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite 1.6s;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .hearts-row {
+    font-size: clamp(1.2rem, 3.5vw, 1.7rem);
+    margin-top: 0.6rem;
+    letter-spacing: 0.2em;
+    animation: floatRow 3s ease-in-out infinite;
+  }
+  @keyframes floatRow {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  .years-tag {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.45rem 1.4rem;
+    background: linear-gradient(135deg, rgba(194,24,91,0.1), rgba(136,14,79,0.08));
+    border: 1px solid rgba(194,24,91,0.25);
+    border-radius: 40px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.78rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--deep);
+    font-weight: 400;
+  }
+
+  /* Begin button */
+  #begin-btn {
+    margin-top: 2.8rem;
+    padding: 1rem 3.4rem;
+    background: linear-gradient(135deg, var(--deep) 0%, var(--wine) 100%);
+    color: #fff; border: none; border-radius: 60px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.88rem; font-weight: 400; letter-spacing: 0.18em;
+    cursor: pointer; text-transform: uppercase;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 1s ease, transform 1s ease, box-shadow 0.3s;
+    box-shadow: 0 10px 40px rgba(194,24,91,0.4), 0 2px 8px rgba(194,24,91,0.2);
+    position: relative; overflow: hidden;
+  }
+  #begin-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  #begin-btn:hover::before { opacity: 1; }
+  #begin-btn.visible { opacity: 1; transform: translateY(0); }
+  #begin-btn:hover {
+    box-shadow: 0 16px 50px rgba(194,24,91,0.55), 0 4px 12px rgba(194,24,91,0.3);
+    transform: translateY(-3px);
+  }
+  #begin-btn:active { transform: translateY(-1px); }
+
+  /* ════ CHAPTER CARDS ════ */
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255,255,255,0.65);
+    border-radius: 28px;
+    padding: 2.8rem 2.2rem;
+    max-width: 660px; width: 100%;
+    box-shadow: 0 20px 70px var(--shadow), 0 4px 20px rgba(255,255,255,0.5) inset;
+    position: relative; z-index: 5;
+  }
+
+  .chapter-label {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.7rem; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 0.5rem; font-weight: 400;
+  }
+
+  .chapter-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5.5vw, 3rem);
+    font-style: italic;
+    color: var(--deep); line-height: 1.1;
+    margin-bottom: 1.5rem;
+    text-shadow: 0 2px 12px rgba(194,24,91,0.15);
+  }
+
+  .chapter-body {
+    font-family: 'Lato', sans-serif;
+    font-size: 1.02rem; line-height: 1.9;
+    color: var(--text); font-weight: 300;
+  }
+  .chapter-body p { margin-bottom: 1.1rem; }
+  .chapter-body p:last-child { margin-bottom: 0; }
+
+  /* chapter body italic accent */
+  .chapter-body em {
+    font-family: 'Playfair Display', serif;
+    font-style: italic; color: var(--deep);
+    font-size: 1.08em;
+  }
+
+  /* DIVIDER */
+  .divider {
+    display: flex; align-items: center; gap: 0.8rem;
+    margin: 0 0 1.5rem;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(194,24,91,0.25));
+  }
+  .divider::after { background: linear-gradient(90deg, rgba(194,24,91,0.25), transparent); }
+  .divider span { font-size: 0.9rem; color: var(--deep); opacity: 0.6; }
+
+  /* BUTTONS */
+  .btn-continue {
+    margin-top: 2rem;
+    padding: 0.82rem 2.4rem;
+    background: linear-gradient(135deg, var(--deep), var(--wine));
+    color: #fff; border: none; border-radius: 50px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.84rem; font-weight: 400; letter-spacing: 0.12em;
+    text-transform: uppercase; cursor: pointer;
+    box-shadow: 0 8px 28px rgba(194,24,91,0.32);
+    transition: box-shadow 0.3s, transform 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .btn-continue::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(255,255,255,0); transition: background 0.3s;
+  }
+  .btn-continue:hover::after { background: rgba(255,255,255,0.08); }
+  .btn-continue:hover { box-shadow: 0 12px 36px rgba(194,24,91,0.5); transform: translateY(-2px); }
+
+  .btn-outline {
+    margin-top: 0.7rem; margin-right: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    background: transparent;
+    border: 1.5px solid rgba(194,24,91,0.4);
+    color: var(--deep); border-radius: 50px;
+    font-family: 'Lato', sans-serif;
+    font-size: 0.82rem; font-weight: 400; letter-spacing: 0.07em;
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s, border-color 0.25s, transform 0.2s;
+    display: inline-block;
+  }
+  .btn-outline:hover { background: rgba(194,24,91,0.08); border-color: var(--deep); transform: translateY(-1px); }
+  .btn-outline.selected { background: var(--deep); color: #fff; border-color: var(--deep); }
+
+  /* TEXTAREA */
+  .memory-question { margin-bottom: 1.8rem; }
+  .memory-question label {
+    display: block;
+    font-family: 'Playfair Display', serif;
+    font-style: italic; font-size: 1rem;
+    color: var(--deep); margin-bottom: 0.6rem;
+    line-height: 1.5;
+  }
+  .memory-question textarea {
+    width: 100%; min-height: 90px;
+    background: rgba(255,255,255,0.72);
+    border: 1.5px solid rgba(194,24,91,0.18);
+    border-radius: 14px; padding: 0.9rem 1.1rem;
+    font-family: 'Lato', sans-serif; font-size: 0.92rem; font-weight: 300;
+    color: var(--text); resize: vertical; outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+    line-height: 1.7;
+  }
+  .memory-question textarea:focus {
+    border-color: var(--deep);
+    background: rgba(255,255,255,0.88);
+    box-shadow: 0 0 0 3px rgba(194,24,91,0.1);
+  }
+
+  /* NOTE POPUP */
+  .sweet-note {
+    margin-top: 0.7rem; padding: 0.65rem 1.1rem;
+    background: linear-gradient(135deg, rgba(248,187,208,0.45), rgba(252,228,236,0.3));
+    border-left: 3px solid var(--deep);
+    border-radius: 0 10px 10px 0;
+    font-family: 'Playfair Display', serif;
+    font-style: italic; font-size: 0.88rem; color: var(--deep);
+    opacity: 0; transform: translateY(8px) scale(0.98);
+    transition: opacity 0.7s, transform 0.7s;
+  }
+  .sweet-note.show { opacity: 1; transform: translateY(0) scale(1); }
+
+  /* COURTROOM */
+  .courtroom-pair { margin-bottom: 1.6rem; }
+  .courtroom-pair .q-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 0.96rem; color: var(--text);
+    margin-bottom: 0.7rem; line-height: 1.5;
+  }
+  .verdict {
+    font-size: 0.82rem; color: var(--deep);
+    font-style: italic; margin-top: 0.5rem;
+    min-height: 1.2rem; font-family: 'Lato', sans-serif;
+  }
+
+  /* PHILOSOPHY */
+  .phil-item {
+    opacity: 0; transform: translateY(22px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+    margin-bottom: 1.8rem; padding-bottom: 1.8rem;
+    border-bottom: 1px solid rgba(194,24,91,0.1);
+    text-align: center;
+  }
+  .phil-item:last-child { border-bottom: none; margin-bottom: 0; }
+  .phil-item.revealed { opacity: 1; transform: translateY(0); }
+  .phil-item .phil-text {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: clamp(1.05rem, 3vw, 1.25rem);
+    color: var(--text); line-height: 1.75;
+  }
+  .phil-item .phil-emoji { font-size: 1.4rem; margin-bottom: 0.5rem; display: block; }
+
+  /* QUOTE GAME */
+  .quote-card {
+    background: rgba(255,255,255,0.52);
+    border-radius: 16px; padding: 1.1rem 1.3rem;
+    margin-bottom: 1.1rem; border: 1px solid rgba(194,24,91,0.12);
+    transition: box-shadow 0.3s;
+  }
+  .quote-card:hover { box-shadow: 0 4px 20px rgba(194,24,91,0.1); }
+  .quote-card .quote-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic; font-size: 1rem;
+    color: var(--text); margin-bottom: 0.9rem; line-height: 1.6;
+  }
+  .quote-result {
+    font-size: 0.82rem; font-style: italic;
+    color: var(--deep); min-height: 1.2rem; margin-top: 0.5rem;
+    font-family: 'Lato', sans-serif;
+  }
+
+  /* FINAL CHAPTER */
+  #final-chapter {
+    background: linear-gradient(150deg, #1e0510 0%, #3d0a22 50%, #1e0510 100%);
+  }
+  #final-chapter .chapter-label { color: rgba(248,187,208,0.45); }
+  #final-chapter .chapter-title { color: #f8bbd0; text-shadow: 0 0 40px rgba(248,187,208,0.3); }
+  #final-chapter .card {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(248,187,208,0.18);
+    box-shadow: 0 20px 80px rgba(0,0,0,0.4), 0 0 60px rgba(194,24,91,0.1);
+  }
+  #final-chapter .divider::before { background: linear-gradient(90deg,transparent,rgba(248,187,208,0.3)); }
+  #final-chapter .divider::after  { background: linear-gradient(90deg,rgba(248,187,208,0.3),transparent); }
+  #final-chapter .divider span { color: rgba(248,187,208,0.5); }
+
+  .final-message {
+    text-align: center;
+  }
+  .final-message p {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic;
+    font-size: clamp(1rem, 3.2vw, 1.25rem);
+    color: rgba(248,187,208,0.88);
+    line-height: 2.1;
+    opacity: 0; transform: translateY(14px);
+    transition: opacity 1.6s ease, transform 1.6s ease;
+  }
+  .final-message p.show { opacity: 1; transform: translateY(0); }
+  .final-message p + p { margin-top: 1rem; }
+
+  .stitched-heart {
+    text-align: center; font-size: 2.4rem;
+    margin: 1.6rem 0;
+    opacity: 0; transition: opacity 1.2s ease 1.2s;
+    display: block;
+  }
+  .stitched-heart.show { opacity: 1; }
+  .stitched-heart span {
+    display: inline-block;
+    animation: heartBeat 1.8s ease-in-out infinite;
+  }
+  @keyframes heartBeat {
+    0%,100% { transform: scale(1); }
+    14%      { transform: scale(1.2); }
+    28%      { transform: scale(1); }
+    42%      { transform: scale(1.12); }
+    56%      { transform: scale(1); }
+  }
+
+  /* THE END */
+  #the-end {
+    background: radial-gradient(ellipse at center, #2a0510 0%, #0e0205 100%);
+  }
+  .end-line {
+    font-family: 'DM Serif Display', serif;
+    font-style: italic; color: rgba(248,187,208,0.82);
+    text-align: center; opacity: 0;
+    transition: opacity 1.5s ease; line-height: 1.4;
+  }
+  .end-line.show { opacity: 1; }
+  #end-big   { font-size: clamp(3rem,9vw,5rem); margin-bottom: 1.8rem; }
+  #end-small { font-size: clamp(1rem,3vw,1.3rem); color: rgba(248,187,208,0.42); }
+
+  /* STAR BURST */
+  .star-burst {
+    display: inline-block;
+    animation: starSpin 0.5s cubic-bezier(.2,1.4,.4,1) forwards;
+  }
+  @keyframes starSpin {
+    from { transform: scale(0) rotate(-200deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+  }
+
+  /* RESPONSIVE */
+  @media(max-width:600px) {
+    .card { padding: 2rem 1.4rem; border-radius: 20px; }
+    .btn-outline { margin-bottom: 0.4rem; }
+    .petal-ring { display: none; }
+    .name-display { font-size: clamp(3.5rem,18vw,5rem); }
+  }
+
+  @media(prefers-reduced-motion:reduce) {
+    *,*::before,*::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<canvas id="heart-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
+<div id="cursor-glow"></div>
+<button id="music-btn" aria-label="Toggle music">🎵</button>
+
+<audio id="bg-music" loop>
+  <source src="https://upload.wikimedia.org/wikipedia/commons/3/37/Johann_Sebastian_Bach_-_Erbarme_dich%2C_mein_Gott_%28BWV_244%29.ogg" type="audio/ogg"/>
+</audio>
+
+<!-- ════════════ LANDING ════════════ -->
+<section id="landing" class="screen active" aria-label="Welcome">
+  <div class="petal-ring"></div>
+  <div class="petal-ring"></div>
+  <div class="petal-ring"></div>
+
+  <div id="landing-center">
+    <div id="name-badge">
+      <p class="welcome-line">a letter just for</p>
+      <div class="name-display">Mwamba</div>
+      <div class="hearts-row">🌸 💗 🌸</div>
+      <div class="years-tag">sixteen months &nbsp;·&nbsp; and counting</div>
+    </div>
+    <button id="begin-btn" aria-label="Begin the experience">Begin ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 1 ════════════ -->
+<section id="ch1" class="screen chapter-screen" aria-label="Chapter One">
+  <div class="card">
+    <p class="chapter-label">Chapter One</p>
+    <h2 class="chapter-title">The Beginning</h2>
+    <div class="divider"><span>✦</span></div>
+    <div class="chapter-body">
+      <p>Every love story has a beginning.</p>
+      <p>Ours started the way all the best ones do. Quietly and without warning. With two people who had absolutely no idea what they were walking into.</p>
+      <p>But something shifted. And neither of us was ever quite the same again.</p>
+    </div>
+    <br/>
+    <button class="btn-continue" onclick="goTo('ch2')">Continue ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 2 ════════════ -->
+<section id="ch2" class="screen chapter-screen" aria-label="Chapter Two">
+  <div class="card">
+    <p class="chapter-label">Chapter Two</p>
+    <h2 class="chapter-title">A Smile Worth Remembering</h2>
+    <div class="divider"><span>🌸</span></div>
+    <div class="chapter-body">
+      <p>Some moments are too soft to shout about. They live quietly in the chest. Let's revisit a few of them.</p>
+    </div>
+    <br/>
+    <div class="memory-question">
+      <label>What was your very first thought the moment you saw me?</label>
+      <textarea id="q2a" placeholder="Be completely honest..." oninput="saveAnswer('q2a',this.value);showNote(this)"></textarea>
+      <div class="sweet-note" id="note-q2a">I smiled reading that. 🌸</div>
+    </div>
+    <div class="memory-question">
+      <label>When did you first feel yourself falling for me? Was there a single moment, or did it just creep up on you?</label>
+      <textarea id="q2b" placeholder="Take your time with this one..." oninput="saveAnswer('q2b',this.value);showNote(this)"></textarea>
+      <div class="sweet-note" id="note-q2b">That made my heart do something embarrassing. 💓</div>
+    </div>
+    <div class="memory-question">
+      <label>If our love story had a theme song, what would it be and why?</label>
+      <textarea id="q2c" placeholder="Any song, any reason..." oninput="saveAnswer('q2c',this.value);showNote(this)"></textarea>
+      <div class="sweet-note" id="note-q2c">Now I need to listen to that immediately. 🎶</div>
+    </div>
+    <button class="btn-continue" onclick="goTo('ch3')">Continue ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 3 ════════════ -->
+<section id="ch3" class="screen chapter-screen" aria-label="Chapter Three">
+  <div class="card">
+    <p class="chapter-label">Chapter Three</p>
+    <h2 class="chapter-title">The Things We Never Notice</h2>
+    <div class="divider"><span>✦</span></div>
+    <div class="chapter-body">
+      <p>Love isn't always in the grand gestures. Sometimes it's in the silence that doesn't need to be filled.</p>
+      <p>It's the way two people learn each other's rhythms. When to speak. When to stay quiet. When a single look says everything words can't hold.</p>
+      <p>Sixteen months of that kind of knowing is a rare and beautiful thing.</p>
+    </div>
+    <br/>
+    <button class="btn-continue" onclick="goTo('ch4')">Continue ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 4 ════════════ -->
+<section id="ch4" class="screen chapter-screen" aria-label="Chapter Four">
+  <div class="card">
+    <p class="chapter-label">Chapter Four</p>
+    <h2 class="chapter-title">The Courtroom</h2>
+    <div class="divider"><span>⚖️</span></div>
+    <div class="chapter-body">
+      <p>Court is now in session. You have the right to remain adorable. Answer very carefully.</p>
+    </div>
+    <br/>
+
+    <div class="courtroom-pair">
+      <p class="q-text">⚖️ Who starts for doing doing during movie <time datetime=""></time>?</p>
+      <div>
+        <button class="btn-outline" onclick="verdict(this,'ch4q1','Liar. We both know the truth. 😄')">You</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q1','Exactly! Case closed. ✨')">Absolutely you</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q1','Honestly? Fair.')">Definitely you</button>
+      </div>
+      <p class="verdict" id="ch4q1"></p>
+    </div>
+
+    <div class="courtroom-pair">
+      <p class="q-text">⚖️ Who sends the longer voice notes?</p>
+      <div>
+        <button class="btn-outline" onclick="verdict(this,'ch4q2','Guilty as charged. No further questions.')">Me</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q2','Hmm. Are you absolutely sure? 🤔')">You</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q2','I will accept that compromise.')">Equal offenders</button>
+      </div>
+      <p class="verdict" id="ch4q2"></p>
+    </div>
+
+    <div class="courtroom-pair">
+      <p class="q-text">⚖️ Who is more dramatic when they are hungry?</p>
+      <div>
+        <button class="btn-outline" onclick="verdict(this,'ch4q3','Completely understandable. Hunger is serious business.')">Me</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q3','<span class=star-burst>⭐</span> That was brave. Truly.')">You</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q3','The jury accepts this plea.')">We are both disasters</button>
+      </div>
+      <p class="verdict" id="ch4q3"></p>
+    </div>
+
+    <div class="courtroom-pair">
+      <p class="q-text">⚖️ Who said "I love you" first, in words or just in the way they acted?</p>
+      <div>
+        <button class="btn-outline" onclick="verdict(this,'ch4q4','That took courage. The court is moved. 💗')">I did</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q4','Knew it. Some things just show.')">You did</button>
+        <button class="btn-outline" onclick="verdict(this,'ch4q4','The sweetest kind of tie.')">We both know I did first</button>
+      </div>
+      <p class="verdict" id="ch4q4"></p>
+    </div>
+
+    <button class="btn-continue" onclick="goTo('ch5')">The court is adjourned ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 5 ════════════ -->
+<section id="ch5" class="screen chapter-screen" aria-label="Chapter Five">
+  <div class="card">
+    <p class="chapter-label">Chapter Five</p>
+    <h2 class="chapter-title">If Time Could Pause</h2>
+    <div class="divider"><span>💞</span></div>
+    <div class="chapter-body">
+      <p>If you could freeze any moment between us and live inside it forever, which one would you choose?</p>
+    </div>
+    <br/>
+    <div class="memory-question">
+      <label>If you could relive one moment between us, just one, which would it be?</label>
+      <textarea id="q5a" placeholder="Close your eyes first..." oninput="saveAnswer('q5a',this.value);showNote(this)"></textarea>
+      <div class="sweet-note" id="note-q5a">I would go back there with you in a heartbeat. 💞</div>
+    </div>
+    <div class="memory-question">
+      <label>What is one conversation you still think about, even now?</label>
+      <textarea id="q5b" placeholder="Even just a feeling is enough..." oninput="saveAnswer('q5b',this.value);showNote(this)"></textarea>
+      <div class="sweet-note" id="note-q5b">Some conversations live rent free forever. 🥹</div>
+    </div>
+    <div class="memory-question">
+      <label>What little thing about you do you think I will never forget?</label>
+      <textarea id="q5c" placeholder="The tiny things matter most..." oninput="saveAnswer('q5c',this.value);showNote(this)"></textarea>
+      <div class="sweet-note" id="note-q5c">You know me better than you think. 🌹</div>
+    </div>
+    <button class="btn-continue" onclick="goTo('ch6')">Continue ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 6 ════════════ -->
+<section id="ch6" class="screen chapter-screen" aria-label="Chapter Six">
+  <div class="card">
+    <p class="chapter-label">Chapter Six</p>
+    <h2 class="chapter-title">Small Truths</h2>
+    <div class="divider"><span>✦</span></div>
+
+    <div class="phil-item">
+      <span class="phil-emoji">🌙</span>
+      <p class="phil-text">Love doesn't always announce itself.<br/>Sometimes it arrives in the middle of an ordinary Tuesday<br/>and quietly refuses to leave.</p>
+    </div>
+    <div class="phil-item">
+      <span class="phil-emoji">🫀</span>
+      <p class="phil-text">The heart is a strange thing.<br/>It keeps the most important memories<br/>not in moments, but in feelings it can't quite name.</p>
+    </div>
+    <div class="phil-item">
+      <span class="phil-emoji">🕰️</span>
+      <p class="phil-text">Sixteen months is not a long time.<br/>Sixteen months is also, somehow, a whole world<br/>built from scratch between two people.</p>
+    </div>
+    <div class="phil-item">
+      <span class="phil-emoji">🌸</span>
+      <p class="phil-text">The people who matter most<br/>don't always know the size of the space<br/>they take up in someone else's story.</p>
+    </div>
+
+    <button class="btn-continue" id="ch6-btn" style="opacity:0;pointer-events:none" onclick="goTo('ch7')">Continue ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ CH 7 ════════════ -->
+<section id="ch7" class="screen chapter-screen" aria-label="Chapter Seven">
+  <div class="card">
+    <p class="chapter-label">Chapter Seven</p>
+    <h2 class="chapter-title">The Laugh Before The Ending</h2>
+    <div class="divider"><span>😂</span></div>
+    <div class="chapter-body">
+      <p>One last game. Did I actually say these things, or did I make them up? Be completely honest.</p>
+    </div>
+    <br/>
+
+    <div class="quote-card">
+      <p class="quote-text">"You are the only person I would share my last piece of food with. Probably."</p>
+      <div>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7a','That is 100% something I would say. 😂')">Real</button>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7a','Are you calling me stingy? Fair.')">Made up</button>
+      </div>
+      <p class="quote-result" id="q7a"></p>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"I once wrote you a letter and then never sent it because I got shy."</p>
+      <div>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7b','This one is actually true. 🙈')">Real</button>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7b','Wrong! This one is real. Embarrassingly.')">Made up</button>
+      </div>
+      <p class="quote-result" id="q7b"></p>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"I carefully calculated the exact angle of my posture so I would always look effortlessly comfortable near you."</p>
+      <div>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7c','Correct! That would be completely unhinged. 😭')">Real</button>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7c','Also correct. That is wildly untrue. 😂')">Made up</button>
+      </div>
+      <p class="quote-result" id="q7c"></p>
+    </div>
+
+    <div class="quote-card">
+      <p class="quote-text">"You make ordinary days feel like something worth remembering."</p>
+      <div>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7d','<span class=star-burst>✨</span> Every single word of it.')">Real</button>
+        <button class="btn-outline" onclick="quoteVerdict(this,'q7d','Still real, whether you believe it or not. 💗')">Made up</button>
+      </div>
+      <p class="quote-result" id="q7d"></p>
+    </div>
+
+    <button class="btn-continue" onclick="goTo('final-chapter')">One last chapter ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ FINAL ════════════ -->
+<section id="final-chapter" class="screen chapter-screen" aria-label="Final Chapter">
+  <div class="card">
+    <p class="chapter-label">Final Chapter</p>
+    <h2 class="chapter-title">One Last Memory</h2>
+    <div class="divider"><span style="color:rgba(248,187,208,0.5)">💗</span></div>
+
+    <div class="final-message">
+      <p id="final-p1">
+        "Some moments deserve more than a place in memory.<br/>
+        They deserve somewhere beautiful to exist."
+      </p>
+
+      <span class="stitched-heart" id="final-heart"><span>💗</span></span>
+
+      <p id="final-p2" style="transition-delay:2s">
+        Thank you, Mwamba.<br/><br/>
+        For every conversation.<br/>
+        Every laugh.<br/>
+        Every look that said more than words ever could.<br/>
+        And every quiet chapter<br/>
+        we unknowingly wrote together.<br/><br/>
+        <span style="font-size:1.15em">Happy Anniversary. 🌹</span>
+      </p>
+    </div>
+
+    <br/>
+    <button class="btn-continue" style="background:linear-gradient(135deg,#c2185b,#6a0636)" onclick="goTo('the-end')">The End ✦</button>
+  </div>
+</section>
+
+<!-- ════════════ THE END ════════════ -->
+<section id="the-end" class="screen" aria-label="The End">
+  <p class="end-line" id="end-big">The End.</p>
+  <p class="end-line" id="end-small">or perhaps, just another page. 🌸</p>
+</section>
+
+<script>
+/* STATE */
+let currentScreen = 'landing';
+let musicPlaying  = false;
+const answers = JSON.parse(localStorage.getItem('anniversary-answers') || '{}');
+const music   = document.getElementById('bg-music');
+
+Object.keys(answers).forEach(k => { const el = document.getElementById(k); if (el) el.value = answers[k]; });
+
+/* CURSOR GLOW */
+const glow = document.getElementById('cursor-glow');
+document.addEventListener('mousemove', e => { glow.style.left = e.clientX+'px'; glow.style.top = e.clientY+'px'; });
+
+/* CANVASES */
+const hCanvas = document.getElementById('heart-canvas');
+const hCtx    = hCanvas.getContext('2d');
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx    = pCanvas.getContext('2d');
+
+function resizeCanvases() {
+  hCanvas.width = pCanvas.width = window.innerWidth;
+  hCanvas.height = pCanvas.height = window.innerHeight;
+}
+resizeCanvases();
+window.addEventListener('resize', resizeCanvases);
+
+/* HEARTS */
+let hearts = [], heartsCleared = false, allHeartsGone = false;
+const HEART_COLORS = ['#f48fb1','#f06292','#ec407a','#e91e63','#f8bbd0','#fce4ec'];
+
+function spawnHeart() {
+  return {
+    x: Math.random() * window.innerWidth,
+    y: window.innerHeight + 40,
+    size: 10 + Math.random() * 28,
+    speed: 1 + Math.random() * 2.2,
+    opacity: 0.5 + Math.random() * 0.5,
+    drift: (Math.random() - 0.5) * 0.8,
+    sway: Math.random() * Math.PI * 2,
+    swaySpeed: 0.012 + Math.random() * 0.022,
+    color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
+    rotation: (Math.random() - 0.5) * 0.4,
+  };
+}
+
+for (let i = 0; i < 22; i++) {
+  const h = spawnHeart();
+  h.y = Math.random() * window.innerHeight * 1.2;
+  hearts.push(h);
+}
+
+function drawHeart(ctx, x, y, size, opacity, color, rot) {
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(0, -size*0.3, -size*0.5, -size*0.7, -size*0.5, -size*0.3);
+  ctx.bezierCurveTo(-size*0.5, size*0.1, 0, size*0.5, 0, size*0.5);
+  ctx.bezierCurveTo(0, size*0.5, size*0.5, size*0.1, size*0.5, -size*0.3);
+  ctx.bezierCurveTo(size*0.5, -size*0.7, 0, -size*0.3, 0, 0);
+  ctx.fill();
+  // subtle shadow
+  ctx.globalAlpha = opacity * 0.12;
+  ctx.fillStyle = '#880e4f';
+  ctx.translate(2, 3);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(0, -size*0.3, -size*0.5, -size*0.7, -size*0.5, -size*0.3);
+  ctx.bezierCurveTo(-size*0.5, size*0.1, 0, size*0.5, 0, size*0.5);
+  ctx.bezierCurveTo(0, size*0.5, size*0.5, size*0.1, size*0.5, -size*0.3);
+  ctx.bezierCurveTo(size*0.5, -size*0.7, 0, -size*0.3, 0, 0);
+  ctx.fill();
+  ctx.restore();
+}
+
+function animateHearts() {
+  hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+  if (allHeartsGone) return;
+
+  hearts.forEach((h, i) => {
+    h.sway += h.swaySpeed;
+    h.x += Math.sin(h.sway) * h.drift;
+    h.y -= h.speed;
+    if (h.y < -50) hearts[i] = spawnHeart();
+    drawHeart(hCtx, h.x, h.y, h.size, h.opacity, h.color, h.rotation);
+  });
+
+  if (!heartsCleared) {
+    const visible = hearts.filter(h => h.y > 0 && h.y < window.innerHeight).length;
+    if (visible < 5) { heartsCleared = true; showLandingText(); }
+  }
+  requestAnimationFrame(animateHearts);
+}
+animateHearts();
+
+function showLandingText() {
+  setTimeout(() => {
+    document.getElementById('name-badge').classList.add('visible');
+    setTimeout(() => document.getElementById('begin-btn').classList.add('visible'), 1400);
+  }, 200);
+}
+setTimeout(() => { if (!heartsCleared) { heartsCleared = true; showLandingText(); } }, 2800);
+
+/* BEGIN */
+document.getElementById('begin-btn').addEventListener('click', () => {
+  let fade = 1;
+  const fi = setInterval(() => {
+    fade -= 0.035;
+    hCanvas.style.opacity = Math.max(0, fade);
+    if (fade <= 0) { clearInterval(fi); allHeartsGone = true; hCanvas.style.display = 'none'; }
+  }, 30);
+
+  document.body.classList.add('started');
+  music.volume = 0;
+  music.play().then(() => {
+    musicPlaying = true;
+    let v = 0;
+    const fi2 = setInterval(() => { v = Math.min(0.38, v + 0.018); music.volume = v; if (v >= 0.38) clearInterval(fi2); }, 90);
+  }).catch(() => {});
+  goTo('ch1');
+  startParticles();
+});
+
+/* MUSIC TOGGLE */
+document.getElementById('music-btn').addEventListener('click', () => {
+  if (musicPlaying) { music.pause(); musicPlaying = false; document.getElementById('music-btn').textContent = '🔇'; }
+  else              { music.play();  musicPlaying = true;  document.getElementById('music-btn').textContent = '🎵'; }
+});
+
+/* NAVIGATION */
+const chapterOrder = ['landing','ch1','ch2','ch3','ch4','ch5','ch6','ch7','final-chapter','the-end'];
+
+function goTo(id) {
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  if (!next) return;
+  prev.classList.remove('active');
+  currentScreen = id;
+  setTimeout(() => {
+    next.scrollTop = 0;
+    next.classList.add('active');
+    updateProgress();
+    onEnter(id);
+  }, 120);
+}
+
+function updateProgress() {
+  const pct = Math.round((chapterOrder.indexOf(currentScreen) / (chapterOrder.length - 1)) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+function onEnter(id) {
+  if (id === 'ch6')           startPhilParade();
+  if (id === 'final-chapter') revealFinal();
+  if (id === 'the-end')       revealEnd();
+}
+
+/* PHIL PARADE */
+function startPhilParade() {
+  const items = document.querySelectorAll('.phil-item');
+  const btn   = document.getElementById('ch6-btn');
+  items.forEach((el, i) => {
+    setTimeout(() => {
+      el.classList.add('revealed');
+      if (i === items.length - 1) setTimeout(() => { btn.style.opacity='1'; btn.style.pointerEvents='auto'; }, 900);
+    }, i * 1100);
+  });
+}
+
+/* FINAL */
+function revealFinal() {
+  particleSlowdown = true;
+  setTimeout(() => {
+    document.getElementById('final-p1').classList.add('show');
+    document.getElementById('final-heart').classList.add('show');
+    document.getElementById('final-p2').classList.add('show');
+  }, 500);
+  if (musicPlaying) {
+    let v = music.volume;
+    const li = setInterval(() => { v = Math.max(0.12, v - 0.004); music.volume = v; if (v <= 0.12) clearInterval(li); }, 120);
+  }
+}
+
+/* THE END */
+function revealEnd() {
+  setTimeout(() => document.getElementById('end-big').classList.add('show'), 700);
+  setTimeout(() => document.getElementById('end-small').classList.add('show'), 2600);
+}
+
+/* SAVE ANSWERS */
+function saveAnswer(k, v) {
+  answers[k] = v;
+  try { localStorage.setItem('anniversary-answers', JSON.stringify(answers)); } catch(e){}
+}
+function showNote(textarea) {
+  if (!textarea.value.trim()) return;
+  const n = document.getElementById('note-' + textarea.id);
+  if (n) n.classList.add('show');
+}
+
+/* COURTROOM */
+function verdict(btn, groupId, msg) {
+  document.querySelectorAll(`[onclick*=",'${groupId}',"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(groupId).innerHTML = msg;
+}
+
+/* QUOTE GAME */
+function quoteVerdict(btn, groupId, msg) {
+  document.querySelectorAll(`[onclick*=",'${groupId}',"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(groupId).innerHTML = msg;
+}
+
+/* PARTICLES */
+let particles = [], particleSlowdown = false;
+
+function spawnParticle() {
+  const types = ['circle','heart'];
+  return {
+    x: Math.random() * pCanvas.width,
+    y: Math.random() * pCanvas.height,
+    r: 1 + Math.random() * 3,
+    vx: (Math.random() - 0.5) * 0.35,
+    vy: -0.18 - Math.random() * 0.45,
+    opacity: Math.random(),
+    life: Math.random(),
+    type: types[Math.floor(Math.random() * types.length)],
+  };
+}
+
+function startParticles() {
+  for (let i = 0; i < 70; i++) particles.push(spawnParticle());
+  animateParticles();
+}
+
+function animateParticles() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  const sp = particleSlowdown ? 0.28 : 1;
+  particles.forEach((p, i) => {
+    p.x += p.vx * sp; p.y += p.vy * sp; p.life += 0.0025 * sp;
+    p.opacity = Math.sin(p.life * Math.PI) * 0.55;
+    if (p.life >= 1 || p.y < 0) { particles[i] = spawnParticle(); particles[i].y = pCanvas.height; return; }
+    pCtx.globalAlpha = p.opacity;
+    if (p.type === 'heart') {
+      pCtx.fillStyle = `rgba(194,24,91,0.6)`;
+      const s = p.r * 1.2;
+      pCtx.beginPath();
+      pCtx.moveTo(p.x, p.y);
+      pCtx.bezierCurveTo(p.x,p.y-s*0.3,p.x-s*0.5,p.y-s*0.7,p.x-s*0.5,p.y-s*0.3);
+      pCtx.bezierCurveTo(p.x-s*0.5,p.y+s*0.1,p.x,p.y+s*0.5,p.x,p.y+s*0.5);
+      pCtx.bezierCurveTo(p.x,p.y+s*0.5,p.x+s*0.5,p.y+s*0.1,p.x+s*0.5,p.y-s*0.3);
+      pCtx.bezierCurveTo(p.x+s*0.5,p.y-s*0.7,p.x,p.y-s*0.3,p.x,p.y);
+      pCtx.fill();
+    } else {
+      pCtx.beginPath();
+      pCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      pCtx.fillStyle = `rgba(194,24,91,0.45)`;
+      pCtx.fill();
+    }
+    pCtx.globalAlpha = 1;
+  });
+  requestAnimationFrame(animateParticles);
+}
+</script>
+</body>
+</html>
